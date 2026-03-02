@@ -16,3 +16,227 @@
 高质量的 `spec.md` 
 我的初步想法是：**做一个命令行工具，输入一个Github Issue/PR/Discussion的URL，它就能自动将其转换为Markdown文件。**
 请开始你的提问
+
+## 第一轮提问
+
+Q1: "内容"的精确范围                                                                    
+                                                                                          
+一个 GitHub Issue 包含很多元素，请告诉我哪些需要抓取：
+
+┌────────────────────────────┬────────────┐
+│            元素             │ 是否需要？ │
+├────────────────────────────┼────────────┤
+│ 标题 + 正文                 │ ?          │
+├────────────────────────────┼────────────┤
+│ 所有评论（含评论者、时间）      │ ?          │
+├────────────────────────────┼────────────┤
+│ Labels                     │ ?          │
+├────────────────────────────┼────────────┤
+│ Assignees                  │ ?          │
+├────────────────────────────┼────────────┤
+│ Milestone                  │ ?          │
+├────────────────────────────┼────────────┤
+│ Reactions（点赞/表情）       │ ?          │
+├────────────────────────────┼────────────┤
+│ Issue 关联的 PR 链接         │ ?          │
+├────────────────────────────┼────────────┤
+│ 正文/评论中的图片             │ ?          │
+└────────────────────────────┴────────────┘
+
+特别是图片——你是只保留原始图片 URL，还是希望工具把图片也下载到本地？
+
+Q2: PR 和 Discussion 的额外内容
+
+- 对于 PR：是否需要抓取 code review
+comments（代码行级别的评论）？还是只要普通评论就够了？
+- 对于 Discussion：Discussion 有"回复"的树形结构，你期望怎么展平到 Markdown 里？
+
+Q3: 认证与私有仓库
+
+- 工具是否需要支持私有仓库？如果需要，你倾向于用什么方式认证——GITHUB_TOKEN 环境变量、gh
+auth 集成、还是命令行参数传入 token？
+
+Q4: 输出
+
+- 输出文件名你有偏好吗？比如 {owner}_{repo}_issue_{number}.md，还是用户自己指定？
+- 输出默认写到当前目录，还是需要 -o 参数指定目录？
+- 是否需要支持输出到 stdout（方便管道操作），比如 issue2md <url> | pbcopy？
+
+---
+先回答这一轮，我再根据你的答案继续深挖 CLI 设计、错误处理、和未来扩展性的问题。
+
+Q1：
+
+标题 + 正文 是需要的
+
+我们只关注PR的描述和Review评论，因此评论是需要的，包含评论者，时间。
+
+Labels / Assignees / Milestone 也是需要的。
+
+Reactions 请作为一个可选项（通过Flag控制）支持，如果开启，在主楼和评论下方显示Reactions统计。
+
+Issue 关联的 PR链接也是需要的
+
+正文/评论中的图片，直接保留原始的图片链接既可，不需要下载到本地
+
+Q2：
+
+- 对于 PR：需要抓取 comments 和普通评论
+- 对于 Discussion：需要抓取回复的树形结构，展平到Markdown里
+
+Q3：
+认证只需要支持公有仓库，认证方式仅支持通过环境变量 GITHUB_TOKEN 传入 Personal Access Token，这是 CLI 工具最标准、最简单的做法。
+
+Q4：
+
+- 输出文件名按照：{owner}_{repo}_issue_{number}.md
+- 输出默认输出到标准输出（stdout），方便用户重定向，同时也支持通过参数（-o）指定输出文件路径
+
+## 第二轮提问：CLI 设计与边缘场景                                                          
+   
+Q5: CLI 调用方式                                                                        
+                
+我设想的基本用法是：
+
+# 输出到 stdout
+issue2md https://github.com/owner/repo/issues/123
+
+# 输出到文件
+issue2md https://github.com/owner/repo/issues/123 -o output.md
+
+# 开启 reactions
+issue2md https://github.com/owner/repo/issues/123 --with-reactions
+
+- 这个交互风格你认可吗？还是你更倾向于子命令风格，比如 issue2md fetch <url>？
+- 除了 -o 和 --with-reactions，你觉得还需要其他 Flag 吗？比如 --verbose 输出调试信息？
+
+Q6: URL 解析与输入校验
+
+- 如果用户输入了一个非 GitHub URL（比如 GitLab
+的链接），工具应该怎么处理？直接报错退出，还是给出友好提示？
+- 如果用户输入的 Issue/PR 编号不存在（404），你期望的错误信息是什么样的？
+
+Q7: API 速率限制
+
+- GitHub API 对未认证请求限制 60 次/小时，认证后是 5000 次/小时。一个有几百条评论的大
+Issue 可能需要多次分页请求。你希望工具在遇到 rate limit
+时怎么做——直接报错、还是等待后自动重试？
+
+Q8: Markdown 输出格式
+
+我需要确认输出的 Markdown 结构。我的初步想法是这样：
+
+# [Issue] Title (#123)
+
+- **State**: Open
+- **Labels**: bug, enhancement
+- **Assignees**: @user1, @user2
+- **Milestone**: v1.0
+- **Linked PRs**: #456, #789
+- **Created**: 2024-01-01 by @author
+
+---
+
+(正文内容)
+
+---
+
+## Comments (3)
+
+### Comment 1 - @user1 (2024-01-02)
+
+(评论内容)
+
+> 👍 5 | ❤️ 2
+
+---
+
+- 这个结构是否符合你的预期？有需要调整的地方吗？
+- 对于 PR 的 review comments（代码行级评论），你希望怎么呈现？我的想法是在文件路径和行号
+下面展示评论内容，类似：
+
+### Review Comments
+
+#### `src/main.go` (Line 42)
+**@reviewer** (2024-01-03):
+> This should handle the error case.
+
+Q9: Discussion 的树形结构
+
+对于 Discussion 的嵌套回复，我打算用缩进引用来表示层级：
+
+### Reply 1 - @user1
+
+内容...
+
+> #### Reply 1.1 - @user2
+>
+> 嵌套回复内容...
+
+- 这种方式可以接受吗？还是你有更好的展现方式偏好？
+- 嵌套层级需要限制吗？（Discussion 理论上可以嵌套很深）
+
+---
+回答完这轮后，我就有足够的信息来起草 spec.md 了。
+
+Q5：
+
+- 交互风格按照你的基本想法来实现。
+- 同时增加 --verbose Flag 来输出调试信息。
+
+Q6：
+
+- 这个工具应该是支持不同代码仓库的 issue 抓取的，因此只需要按照用户提供的 url抓取既可，同时工具应该解析URL结构来判断是 Issue/PR/Discussion，这是核心体验。
+- 如果用户输入的 Issue/PR 编号不存在（404），则提示 Issue/PR 不存在，并给出调用API返回的信息。
+
+Q7：
+
+遇到API速率限制后，进行重试，每次重试的时间间隔需要响应增加，如果重试3次后，还是失败，则提示错误。
+
+Q8：
+
+直接把所有Review Comments和其他Comments一起按时间线平铺展示即可。我们的目标是归档“发生了什么对话”。
+
+Q9：
+
+Discussion 的嵌套回复，按照时间线平铺展示既可。
+
+
+## 生成文档
+
+1.  在项目根目录下创建一个名为 specs/001-core-functionality/ 的目录。
+2.  在该目录下创建 spec.md 文件。内容必须包含：    
+
+*   **用户故事**（含CLI和未来的Web版）    
+*   **功能性需求**（涵盖我们讨论的所有细节：URL识别、Flags、Token、Markdown结构）    
+*   **非功能性需求**（架构解耦、错误处理）    
+*   **验收标准**（列出具体的测试Case）    
+*   **输出格式示例**（包含你刚才设计的Markdown结构和Frontmatter）请直接执行工具生成文件。
+
+
+## 后续优化
+
+**4. 错误处理：**
+* 如果URL无效或资源不存在，直接报错退出，并在stderr输出清晰的错误信息。
+* **不需要**复杂的重试机制，保持CLI轻量。
+* API限流时，直接透传GitHub API的错误信息给用户即可。
+
+
+## 生成项目目录结构
+
+非常好。基于这份 `spec.md` 和我们的 `constitution.md`（特别是关于包内聚的原则），请为这个功能设计详细的包结构。
+
+请调用 `Bash` 工具，创建以下目录（如果尚未存在）：
+
+- `cmd/issue2md/` (CLI入口)
+- `cmd/issue2mdweb/` (Web入口)
+- `internal/`
+   ├── github/      # GitHub API 交互
+   ├── parser/      # URL 解析与类型识别
+   ├── converter/   # 数据转换为 Markdown
+   ├── cli/         # 命令行接口
+   └── config/      # 配置管理
+- `web/templates/` (Web模板)
+- `web/static/` (静态资源)
+
+同时，请在 `specs/001-core-functionality/` 下创建一个 `api-sketch.md`，简要描述一下 `internal/converter` 和 `internal/github` 包对外暴露的主要接口（Interface/Function签名），作为后续开发的参考。
