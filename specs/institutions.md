@@ -286,3 +286,33 @@ Discussion 的嵌套回复，按照时间线平铺展示既可。
   * **Phase 4：CLI Asssembly**（命令行入口集成）
     
 完成后，将生成的任务列表写入 `./specs/001-core-functionality/task.md`
+
+## 完成 Phase 1 任务
+
+`@./specs/001-core-functionality/tasks.md`
+`@./specs/001-core-functionality/plan.md`
+
+请执行 **Phase 1: Foundation** 中的所有任务（T001-T035）。
+
+主要是创建 `go.mod`，并在 `internal/github/` 和 `internal/parser/` 等目录下定义核心的数据结构（`types.go`）。
+
+请一次性完成这些基础工作，无需TDD，直接生成代码即可。
+
+## 完成 Phase 2 任务
+
+很好，基础结构已就绪。现在进入 **Phase 2**。
+
+请严格遵循TDD流程，**先不要实现功能代码**。
+
+在 `internal/parser/` 目录下创建 `parser_test.go` 文件。
+
+请根据`plan.md`中的接口定义，为 `Parse` 函数编写一组**表格驱动测试（Table-Driven Tests）**。测试用例必须覆盖以下场景：
+1.  合法的 Issue URL。
+2.  合法的 Pull Request URL。
+3.  合法的 Discussion URL。
+4.  无效的 URL（格式错误）。
+5.  不支持的 URL 类型（如仓库主页）。
+
+此时 `parser.go` 中可能还没有 `Parse` 函数，或者它是空的。请确保测试代码能够通过编译（你可以先在 `parser.go` 中生成一个空的函数签名），但**运行测试必须失败**。
+
+其他任务也参考上面逻辑
