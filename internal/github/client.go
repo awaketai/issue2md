@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	gogithub "github.com/google/go-github/v68/github"
@@ -42,17 +43,14 @@ func NewClient(token string, verbose io.Writer) *Client {
 	}
 }
 
-// FetchIssue 获取 Issue 完整数据。自动处理分页。
-func (c *Client) FetchIssue(ctx context.Context, owner, repo string, number int) (IssueData, error) {
-	return IssueData{}, nil
+// newGraphQLClientForURL 创建指向自定义 URL 的 GraphQL 客户端（用于测试）。
+func newGraphQLClientForURL(url string) *githubv4.Client {
+	return githubv4.NewEnterpriseClient(url, nil)
 }
 
-// FetchPR 获取 PR 完整数据。普通评论与 Review Comments 按时间线合并排序。
-func (c *Client) FetchPR(ctx context.Context, owner, repo string, number int) (IssueData, error) {
-	return IssueData{}, nil
-}
-
-// FetchDiscussion 获取 Discussion 完整数据。嵌套回复按时间线平铺。
-func (c *Client) FetchDiscussion(ctx context.Context, owner, repo string, number int) (IssueData, error) {
-	return IssueData{}, nil
+// logf 向 verbose writer 输出调试日志（如果非 nil）。
+func (c *Client) logf(format string, args ...any) {
+	if c.verbose != nil {
+		fmt.Fprintf(c.verbose, format+"\n", args...)
+	}
 }
