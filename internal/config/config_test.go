@@ -28,6 +28,8 @@ func TestLoad(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.setEnv {
 				t.Setenv("GITHUB_TOKEN", tt.envValue)
+			} else {
+				t.Setenv("GITHUB_TOKEN", "")
 			}
 
 			got := Load()
