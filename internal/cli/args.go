@@ -23,6 +23,7 @@ func (e *InputError) Error() string { return e.Err.Error() }
 func (e *InputError) Unwrap() error { return e.Err }
 
 // ParseArgs 解析命令行参数。args 为 os.Args[1:]。
+// URL 可以出现在 flags 之前或之后。
 func ParseArgs(args []string) (Args, error) {
 	fs := flag.NewFlagSet("issue2md", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)

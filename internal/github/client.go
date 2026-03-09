@@ -48,6 +48,18 @@ func newGraphQLClientForURL(url string) *githubv4.Client {
 	return githubv4.NewEnterpriseClient(url, nil)
 }
 
+// NewTestClient 创建一个指向自定义 URL 的测试客户端（仅 REST API）。
+// 用于 httptest 集成测试。
+func NewTestClient(baseURL string, verbose io.Writer) *Client {
+	restClient := gogithub.NewClient(nil)
+	restClient.BaseURL, _ = restClient.BaseURL.Parse(baseURL + "/")
+
+	return &Client{
+		restClient: restClient,
+		verbose:    verbose,
+	}
+}
+
 // logf 向 verbose writer 输出调试日志（如果非 nil）。
 func (c *Client) logf(format string, args ...any) {
 	if c.verbose != nil {
