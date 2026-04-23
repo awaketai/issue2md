@@ -316,3 +316,35 @@ Discussion 的嵌套回复，按照时间线平铺展示既可。
 此时 `parser.go` 中可能还没有 `Parse` 函数，或者它是空的。请确保测试代码能够通过编译（你可以先在 `parser.go` 中生成一个空的函数签名），但**运行测试必须失败**。
 
 其他任务也参考上面逻辑
+
+## 构建 Dockerfile
+
+你现在是以为自身的 DevOps 工程师，专精于 Go 应用的容器化。
+
+请为当前项目编写一个 `Dockerfile`，如果 `Dockerfile` 已经存在，请审查并重写现有 `Dockerfile`。
+
+**必须遵循一下生产级最佳实践：**
+
+1. **多阶段构建（Multi-stage Build）:**
+  * 使用一个包含完整 Go 工具链的 `builder` 阶段来编译应用。
+  * 使用一个极度精简的 `alpine` 或者 `distroless` 镜像作为最终的 `final` 阶段，只拷贝编译好的二进制文件，以实现最小化的镜像体积。
+2. **依赖缓存：** 优化 `go.md` 相关指令的顺序，确保依赖层能够被 Docker 有效缓存，加速后续构建。
+3. **安全性：**
+  * 在最终阶段，使用一个非 root 用户来运行应用。
+  * 确保最终镜像不包含任何源代码或构建工具。
+    
+请分析项目，项目入口是 `./cmd/issue2md/main.go`，然后生成 `Dockerfile`
+
+## 构建 Makefile
+
+请继续扮演 DevOps 工程师的角色，为项目创建一个 `Makefile`。
+这份 `Makefile` 需要包含以下几个核心目标(targets)：
+
+* `build`: 编译 `issue2md-cli` 和 `issue2md-web`(如果存在)两个二进制文件。
+* `test`: 运行所有单元测试。
+* `lint`: 运行 `golangci-lint` 进行静态检查
+* `docker-build`: 使用 Dockerfile 构建容器镜像，镜像 tag 应为 `issue2md:latest`
+* `clean`: 清理所有构建产物
+
+如果 `Makefile` 已经存在，也要按照上面核心目标对其进行审查，如果有不符，则重写。
+确保 `Makefile` 的编写遵循最佳实践，例如使用 `.PHONY` 来声明伪目标。

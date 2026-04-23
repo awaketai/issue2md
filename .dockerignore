@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+.vscode
+.zed
+.claude
+bin/
+*.test
+output.md
+README.md
+CLAUDE.md
+constitution.md
+specs/
+web/
+*.DS_Store
