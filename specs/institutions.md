@@ -348,3 +348,15 @@ Discussion 的嵌套回复，按照时间线平铺展示既可。
 
 如果 `Makefile` 已经存在，也要按照上面核心目标对其进行审查，如果有不符，则重写。
 确保 `Makefile` 的编写遵循最佳实践，例如使用 `.PHONY` 来声明伪目标。
+
+## 创建 /build 指令
+
+请帮我创建一个自定义的项目级别的 slash command 文件 `.claude/commands/build.md`。
+这个指令的作用是：调用 `make build` 来构建项目，如果构建失败，它应该自动分析错误原因。
+`allowed-tools` 应该包含 `Bash(make:build)`。
+
+## 创建 /docker-build 指令
+
+请帮我创建一个 `./claude/commands/docker-build.md` 指令
+这个指令的作用是：调用 `make docker-build`。它应该接收一个参数 `$1` 作为镜像的 tag。如果用户没有提供参数，则默认使用 `latest`。
+`allowed-tools` 应该包含 `Bash(docker:*)`,`Bash(make:docker-build)`。
