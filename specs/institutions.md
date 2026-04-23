@@ -360,3 +360,20 @@ Discussion 的嵌套回复，按照时间线平铺展示既可。
 请帮我创建一个 `./claude/commands/docker-build.md` 指令
 这个指令的作用是：调用 `make docker-build`。它应该接收一个参数 `$1` 作为镜像的 tag。如果用户没有提供参数，则默认使用 `latest`。
 `allowed-tools` 应该包含 `Bash(docker:*)`,`Bash(make:docker-build)`。
+
+## 构建 Github CI/CD
+
+我们需要为这个项目设置一套 CI/CD 流水线。
+
+请创建一个 Github Actions 工作流配置文件，路径为 `.github/workflows/ci.yml`。
+
+**这个流水线需要实现以下功能：**
+
+1. **触发条件：** 当有代码被推送到 `main` 分支，或者有新的 `Pull Request` 被创建时触发。
+2. **核心任务：** 在一个 Ubuntu 环境中，它需要依次执行以下步骤：
+  * Checkout 代码
+  * 设置 Go 环境
+  * 运行 `make test`
+  * 运行 `make lint`
+  * 运行 `make build`
+3. **健壮性：** 确保任何一步失败，整个流水线都会失败。
